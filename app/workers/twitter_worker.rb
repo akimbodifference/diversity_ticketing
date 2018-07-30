@@ -3,11 +3,11 @@ class TwitterWorker
   extend ApplicationHelper
 
   def self.announce_event(event)
-    perform_async(event.id)
+    TwitterWorker.send_tweet(event.id)
     Tweet.create(event_id: event.id, published: true)
   end
 
-  def routes
+  def self.routes
     @routes ||= Class.new {
       include Rails.application.routes.url_helpers
 
@@ -17,10 +17,10 @@ class TwitterWorker
     }.new
   end
 
-  def perform(event_id)
+  def self.send_tweet(event_id)
     event = Event.find(event_id)
     deadline = format_date(event.deadline)
-    event_url = routes.event_url(event)
+    event_url = TwitterWorker.routes.event_url(event)
     name_or_handle = (event.twitter_handle ? "@#{event.twitter_handle}" : "#{event.name.truncate(30, separator: ' ')}")
     message = ["So awesome! #{name_or_handle} is giving away #{event.number_of_tickets} #DiversityTickets — you can apply for them here: #{event_url} ",
     "We have #{event.number_of_tickets} #DiversityTickets for #{name_or_handle} — apply by #{deadline} here: #{event_url}",
